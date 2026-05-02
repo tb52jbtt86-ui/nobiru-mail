@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NOBIRU リマインドメール</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: #0f0f0f; font-family: 'Hiragino Sans', 'Meiryo', sans-serif; padding: 32px 16px; color: #f0ede8; }
+    .container { max-width: 560px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header .sub { font-size: 11px; letter-spacing: 0.3em; color: #a0906e; text-transform: uppercase; margin-bottom: 8px; }
+    .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.05em; }
+    .header .line { width: 40px; height: 2px; background: #a0906e; margin: 14px auto 0; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 28px 24px; margin-bottom: 20px; }
+    .field { margin-bottom: 20px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 12px; color: #a0906e; letter-spacing: 0.1em; margin-bottom: 8px; font-weight: 500; }
+    .optional { color: #666; font-weight: 400; margin-left: 8px; font-size: 11px; }
+    input, select { background: #111; border: 1px solid #2e2e2e; border-radius: 6px; color: #f0ede8; font-size: 14px; padding: 10px 14px; font-family: inherit; outline: none; }
+    input:focus, select:focus { border-color: #a0906e; }
+    .name-row { display: flex; align-items: center; gap: 8px; }
+    .name-row input { flex: 1; }
+    .san { color: #888; font-size: 14px; white-space: nowrap; }
+    .date-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    .time-row { display: flex; gap: 8px; align-items: center; }
+    .unit { color: #888; font-size: 13px; white-space: nowrap; }
+    .w56 { width: 56px; text-align: center; }
+    .w80 { width: 80px; }
+    .w72 { width: 72px; }
+    .full { width: 100%; }
+    .btn-generate { width: 100%; padding: 14px; background: linear-gradient(135deg, #a0906e, #c8b08a); color: #0f0f0f; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; letter-spacing: 0.08em; cursor: pointer; margin-bottom: 20px; font-family: inherit; }
+    .result { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; overflow: hidden; display: none; }
+    .result.show { display: block; }
+    .result-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #2a2a2a; }
+    .result-label { font-size: 12px; color: #888; }
+    .btn-row { display: flex; gap: 8px; }
+    .btn-reset { padding: 6px 14px; background: transparent; border: 1px solid #333; border-radius: 6px; color: #888; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .btn-copy { padding: 6px 16px; background: linear-gradient(135deg, #a0906e, #c8b08a); border: none; border-radius: 6px; color: #0f0f0f; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-copy.copied { background: #3a5a3a; color: #8fc88f; }
+    .email-text { margin: 0; padding: 20px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: #d4cfc8; font-family: inherit; max-height: 420px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="sub">NOBIRU Stretch 九品仏店</div>
+      <h1>リマインドメール 生成</h1>
+      <div class="line"></div>
+    </div>
+    <div class="card">
+      <div class="field">
+        <label>お客様のお名前 *</label>
+        <div class="name-row">
+          <input type="text" id="name" placeholder="山田 太郎" />
+          <span class="san">様</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>予約日時 *</label>
+        <div class="date-row">
+          <input type="text" id="month" class="w56" placeholder="5" maxlength="2" />
+          <span class="unit">月</span>
+          <input type="text" id="day" class="w56" placeholder="10" maxlength="2" />
+          <span class="unit">日</span>
+          <select id="dow" class="w80">
+            <option>日曜日</option><option>月曜日</option><option>火曜日</option>
+            <option selected>水曜日</option><option>木曜日</option><option>金曜日</option><option>土曜日</option>
+          </select>
+        </div>
+        <div class="time-row">
+          <input type="text" id="hour" class="w56" placeholder="14" maxlength="2" />
+          <span class="unit">時</span>
+          <select id="minute" class="w72">
+            <option>00</option><option>15</option><option>30</option><option>45</option>
+          </select>
+          <span class="unit">分〜</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>お悩み・目的 <span class="optional">（任意）</span></label>
+        <input type="text" id="concern" placeholder="例：肩こりと腰痛" class="full" />
+      </div>
+    </div>
+    <button class="btn-generate" onclick="generate()">メールを生成する</button>
+    <div class="result" id="result">
+      <div class="result-header">
+        <span class="result-label">生成されたメール</span>
+        <div class="btn-row">
+          <button class="btn-reset" onclick="reset()">リセット</button>
+          <button class="btn-copy" id="btnCopy" onclick="copyText()">コピー</button>
+        </div>
+      </div>
+      <pre class="email-text" id="emailText"></pre>
+    </div>
+  </div>
+  <script>
+    function generate() {
+      var name = document.getElementById('name').value.trim();
+      var month = document.getElementById('month').value.trim();
+      var day = document.getElementById('day').value.trim();
+      var hour = document.getElementById('hour').value.trim();
+      var minute = document.getElementById('minute').value;
+      var concern = document.getElementById('concern').value.trim();
+      var dow = document.getElementById('dow').value.replace('曜日','');
+      if (!name || !month || !day || !hour) { alert('お名前・月・日・時間を入力してください'); return; }
+      var concernLine = concern
+        ? name+'様の場合ですと'+concern+'などのお悩みあるとのことなので、体の状態に合わせた"完全オーダーメイドのストレッチ"で、初回から変化をご体感いただけるよう、全力でサポートさせていただきます！'
+        : '当日は'+name+'様のお悩みをヒアリングさせていただき、お体の状態に合わせた"完全オーダーメイドのストレッチ"で、初回から変化をご体感いただけるよう、全力でサポートさせていただきます！';
+      var text = name+'様\n\nこの度は、NOBIRU Stretch九品仏店にご予約いただき誠にありがとうございます。\n\nご予約内容を下記の通り確認させていただきます。\n\n\n【ご予約内容】\n\n●日時：'+month+'月'+day+'日（'+dow+'）'+hour+'時'+minute+'分〜\n\n●メニュー：初回体験コース（60分）\n\n\n当日は、以下の内容をご確認のうえご来店いただけますと幸いです。\n\n\n【ご案内事項】\n\n・動きやすい服装でお越しください（貸出のお着替えもございます）\n\n・ご予約の5分前を目安にお越しください\n\n・お身体の状態やお悩みについて、簡単なカウンセリングからスタートします\n\n\n'+concernLine+'\n\nご不明点やご都合の変更がある場合は、前日までにご連絡をお願いいたします。\n\n\nそれでは、'+name+'様にお会いできることを楽しみにしております！\n\nNOBIRU Stretch\nTEL：070-8422-7758\n\n所在地：東京都世田谷区奥沢８丁目13-8 メゾン奥沢';
+      document.getElementById('emailText').textContent = text;
+      document.getElementById('result').classList.add('show');
+      document.getElementById('btnCopy').textContent = 'コピー';
+      document.getElementById('btnCopy').classList.remove('copied');
+    }
+    function copyText() {
+      var text = document.getElementById('emailText').textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        var btn = document.getElementById('btnCopy');
+        btn.textContent = '✓ コピー済み';
+        btn.classList.add('copied');
+        setTimeout(function(){ btn.textContent='コピー'; btn.classList.remove('copied'); }, 2500);
+      });
+    }
+    function reset() {
+      document.getElementById('name').value='';
+      document.getElementById('month').value='';
+      document.getElementById('day').value='';
+      document.getElementById('hour').value='';
+      document.getElementById('concern').value='';
+      document.getElementById('result').classList.remove('show');
+    }
+  </script>
+</body>
+</html>
